@@ -577,6 +577,59 @@ class ChessGame {
         
         return notation;
     }
+
+    // Convert current board state to FEN notation (for Stockfish)
+    toFen() {
+        let fen = '';
+        
+        // Board position
+        for (let row = 0; row < 8; row++) {
+            let emptyCount = 0;
+            for (let col = 0; col < 8; col++) {
+                const piece = this.board[row][col];
+                if (piece === '') {
+                    emptyCount++;
+                } else {
+                    if (emptyCount > 0) {
+                        fen += emptyCount;
+                        emptyCount = 0;
+                    }
+                    fen += piece;
+                }
+            }
+            if (emptyCount > 0) {
+                fen += emptyCount;
+            }
+            if (row < 7) {
+                fen += '/';
+            }
+        }
+        
+        // Active color
+        fen += ' ' + (this.currentTurn === 'white' ? 'w' : 'b');
+        
+        // Castling availability
+        let castling = '';
+        if (this.castlingRights.white.kingSide) castling += 'K';
+        if (this.castlingRights.white.queenSide) castling += 'Q';
+        if (this.castlingRights.black.kingSide) castling += 'k';
+        if (this.castlingRights.black.queenSide) castling += 'q';
+        fen += ' ' + (castling || '-');
+        
+        // En passant target square
+        if (this.enPassantTarget) {
+            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+            fen += ' ' + files[this.enPassantTarget.col] + ranks[this.enPassantTarget.row];
+        } else {
+            fen += ' -';
+        }
+        
+        // Halfmove clock and fullmove number
+        fen += ' ' + this.halfMoveClock + ' ' + this.fullMoveNumber;
+        
+        return fen;
+    }
 }
 
 // Export for use in other files

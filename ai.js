@@ -1,12 +1,19 @@
 /**
- * Chess AI
- * Implements minimax algorithm with alpha-beta pruning
+ * Chess AI - Hybrid: Custom Minimax (levels 1-3) + Stockfish (levels 4-20)
  */
 
 class ChessAI {
-    constructor(game, difficulty = 2) {
+    constructor(game, difficulty = 10) {
         this.game = game;
         this.difficulty = difficulty;
+        this.stockfish = null;
+        this.stockfishReady = false;
+        this.pendingResolve = null;
+        
+        // Initialize Stockfish for levels 4+
+        if (difficulty >= 4 && typeof Worker !== 'undefined') {
+            this.initStockfish();
+        }
         
         // Piece values for evaluation
         this.pieceValues = {
@@ -86,12 +93,88 @@ class ChessAI {
         ];
     }
 
+    initStockfish() {
+        try {
+            // Stockfish.js is loaded via CDN in index.html
+            if (typeof Stockfish !== 'undefined') {
+                this.stockfish = new Stockfish();
+            } else if (typeof window !== 'undefined' && window.Stockfish) {
+                this.stockfish = new window.Stockfish();
+            }
+            
+            if (this.stockfish) {
+                this.stockfish.onmessage = (event) => {
+                    const line = event.data || event;
+                    if (line.startsWith('bestmove')) {
+                        if (this.pendingResolve) {
+                            this.pendingResolve(line.split(' ')[1]);
+                            this.pendingResolve = null;
+                        }
+                    }
+                    if (line === 'uciok') {
+                        this.stockfishReady = true;
+                    }
+                };
+                this.stockfish.postMessage('uci');
+            }
+        } catch (e) {
+            console.log('Stockfish initialization failed, falling back to custom AI:', e);
+        }
+    }
+
     setDifficulty(difficulty) {
         this.difficulty = difficulty;
+        // Initialize Stockfish if difficulty is 4+ and not already initialized
+        if (difficulty >= 4 && !this.stockfish) {
+            this.initStockfish();
+        }
     }
 
     // Get the best move for the current position
-    getBestMove(color) {
+    async getBestMove(color) {
+        // Use Stockfish for levels 4-20
+        if (this.difficulty >= 4 && this.stockfish) {
+            return await this.getStockfishMove(color);
+        }
+        
+        // Use custom minimax for levels 1-3
+        return this.getCustomMove(color);
+    }
+
+    // Stockfish-based move calculation
+    getStockfishMove(color) {
+        return new Promise((resolve) => {
+            if (!this.stockfish || !this.stockfishReady) {
+                // Fallback to custom AI if Stockfish isn't ready
+                resolve(this.getCustomMove(color));
+                return;
+            }
+
+            // Convert board to FEN
+            const fen = this.game.toFen();
+            
+            // Set up search parameters based on difficulty
+            const depth = Math.min(this.difficulty - 2, 20); // Levels 4-20 map to depth 2-18
+            const moveTime = Math.min(500 + (this.difficulty - 4) * 200, 3000);
+            
+            this.pendingResolve = resolve;
+            
+            // Send position and go command to Stockfish
+            this.stockfish.postMessage(`position fen ${fen}`);
+            this.stockfish.postMessage(`go depth ${depth} movetime ${moveTime}`);
+            
+            // Timeout fallback
+            setTimeout(() => {
+                if (this.pendingResolve) {
+                    this.pendingResolve = null;
+                    resolve(this.getCustomMove(color));
+                }
+            }, moveTime + 1000);
+        });
+    }
+
+    // Custom minimax-based move calculation (for levels 1-3)
+    getCustomMove(color) {
         const depth = this.difficulty;
         const isMaximizing = color === 'white';
         

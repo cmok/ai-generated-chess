@@ -14,9 +14,11 @@ A fully-featured chess game that runs in your browser, allowing you to play agai
   - Draw by repetition and insufficient material
   
 - **AI Opponent**
-  - Minimax algorithm with alpha-beta pruning
-  - Three difficulty levels (Easy, Medium, Hard)
-  - Configurable search depth
+  - Hybrid AI system: Custom Minimax (levels 1-3) + Stockfish engine (levels 4-20)
+  - 20 difficulty levels for all skill levels
+  - Levels 1-3: Fast custom AI with alpha-beta pruning (beginner to intermediate)
+  - Levels 4-20: Stockfish chess engine (intermediate to grandmaster level)
+  - Configurable search depth and thinking time
   
 - **User Interface**
   - Clean, responsive design that works on desktop and mobile
@@ -60,7 +62,9 @@ Then open your browser and navigate to `http://localhost:8000`
 ## How to Play
 
 1. **Select Game Mode**: Choose between "Human vs AI" or "AI vs AI"
-2. **Choose Difficulty**: Select Easy, Medium, or Hard for the AI
+2. **Choose Difficulty**: Select a level from 1-20 using the slider
+   - Levels 1-3: Custom AI (fast, good for beginners)
+   - Levels 4-20: Stockfish engine (strong, grandmaster level at 20)
 3. **Pick Your Side** (Human vs AI only): Choose to play as White or Black
 4. **Make Moves**: Click on a piece to select it, then click on a valid square to move
 5. **Special Moves**: 
@@ -90,10 +94,13 @@ Then open your browser and navigate to `http://localhost:8000`
 
 ## Technical Details
 
-- **No Dependencies**: Pure vanilla JavaScript, no external libraries
+- **Hybrid AI System**: 
+  - Levels 1-3: Custom minimax with alpha-beta pruning and positional evaluation
+  - Levels 4-20: Stockfish chess engine (via stockfish.js CDN)
+- **No Local Dependencies**: Pure vanilla JavaScript, Stockfish loaded from CDN
 - **Responsive Design**: Works on all screen sizes
-- **Efficient AI**: Alpha-beta pruning for optimal move calculation
 - **Complete Rule Set**: Implements all FIDE chess rules
+- **FEN Support**: Board state export for engine integration
 
 ## License
 

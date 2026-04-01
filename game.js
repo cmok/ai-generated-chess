@@ -34,6 +34,7 @@ class ChessUI {
         this.gameModeSelect = document.getElementById('gameMode');
         this.playerColorSelect = document.getElementById('playerColor');
         this.aiDifficultySelect = document.getElementById('aiDifficulty');
+        this.diffValueSpan = document.getElementById('diffValue');
         this.newGameBtn = document.getElementById('newGameBtn');
         this.undoBtn = document.getElementById('undoBtn');
         this.flipBoardBtn = document.getElementById('flipBoardBtn');
@@ -56,7 +57,18 @@ class ChessUI {
         });
         
         this.aiDifficultySelect.addEventListener('change', (e) => {
-            this.ai.setDifficulty(parseInt(e.target.value));
+            const level = parseInt(e.target.value);
+            this.ai.setDifficulty(level);
+            if (this.diffValueSpan) {
+                this.diffValueSpan.textContent = level;
+            }
+        });
+        
+        // Update difficulty display on input
+        this.aiDifficultySelect.addEventListener('input', (e) => {
+            if (this.diffValueSpan) {
+                this.diffValueSpan.textContent = e.target.value;
+            }
         });
     }
     
@@ -225,9 +237,9 @@ class ChessUI {
         this.updateStatus();
         
         // Use setTimeout to allow UI to update before AI thinks
-        setTimeout(() => {
+        setTimeout(async () => {
             const aiColor = this.game.currentTurn;
-            const move = this.ai.getBestMove(aiColor);
+            const move = await this.ai.getBestMove(aiColor);
             
             if (move) {
                 const notation = this.game.getMoveNotation(move);
