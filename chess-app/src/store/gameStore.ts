@@ -54,34 +54,83 @@ const createInitialState = (): Omit<GameState, 'chessGame' | 'ai'> => ({
 export const useGameStore = create<GameStore>((set, get) => {
   const chessGame = new ChessGame();
 
+  // Helper to sync store state from chessGame
+  const syncState = () => {
+    const { chessGame } = get();
+    set({
+      board: chessGame.board.map((row) => [...row]),
+      currentTurn: chessGame.currentTurn,
+      castlingRights: JSON.parse(JSON.stringify(chessGame.castlingRights)),
+      enPassantTarget: chessGame.enPassantTarget,
+      halfMoveClock: chessGame.halfMoveClock,
+      fullMoveNumber: chessGame.fullMoveNumber,
+      moveHistory: [...chessGame.moveHistory],
+      capturedPieces: JSON.parse(JSON.stringify(chessGame.capturedPieces)),
+      gameOver: chessGame.gameOver,
+      gameResult: chessGame.gameResult,
+      lastMove:
+        chessGame.moveHistory.length > 0
+          ? chessGame.moveHistory[chessGame.moveHistory.length - 1]?.move ?? null
+          : null,
+    });
+  };
+
+  // Helper to check if it's the AI's turn
+  const isAITurn = (): boolean => {
+    const { gameMode, playerColor } = get();
+    const { currentTurn } = get().chessGame;
+    if (gameMode === 'ai-vs-ai') return true;
+    if (gameMode === 'human-vs-ai' && currentTurn !== playerColor) return true;
+    return false;
+  };
+
+  // Helper to schedule next AI move
+  const scheduleNextAIMove = (delay: number = 500) => {
+    setTimeout(() => {
+      const state = get();
+      if (!state.gameOver && !state.isAiThinking && isAITurn()) {
+        state.makeAIMove();
+      }
+    }, delay);
+  };
+
   return {
     ...createInitialState(),
     chessGame,
     ai: new ChessAI(chessGame, 10),
 
     initializeGame: () => {
-      const { chessGame, aiDifficulty } = get();
+      const { aiDifficulty, gameMode, playerColor } = get();
       chessGame.reset();
       const ai = new ChessAI(chessGame, aiDifficulty);
-      const state = chessGame;
 
+      // Reset only game-related state, preserve gameMode and playerColor
       set({
-        board: state.board.map((row) => [...row]),
-        currentTurn: state.currentTurn,
-        castlingRights: JSON.parse(JSON.stringify(state.castlingRights)),
-        enPassantTarget: state.enPassantTarget,
-        halfMoveClock: state.halfMoveClock,
-        fullMoveNumber: state.fullMoveNumber,
+        board: chessGame.board.map((row) => [...row]),
+        currentTurn: chessGame.currentTurn,
+        castlingRights: JSON.parse(JSON.stringify(chessGame.castlingRights)),
+        enPassantTarget: chessGame.enPassantTarget,
+        halfMoveClock: chessGame.halfMoveClock,
+        fullMoveNumber: chessGame.fullMoveNumber,
         moveHistory: [],
         capturedPieces: { white: [], black: [] },
         gameOver: false,
         gameResult: null,
         selectedSquare: null,
         validMoves: [],
-        lastMove: null,
+        isFlipped: false,
         isAiThinking: false,
+        lastMove: null,
         ai,
+        aiDifficulty,
+        gameMode,
+        playerColor,
       });
+
+      // Schedule AI's first move if it's the AI's turn
+      if (isAITurn()) {
+        scheduleNextAIMove(500);
+      }
     },
 
     resetGame: () => {
@@ -93,11 +142,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         const { chessGame, currentTurn, gameMode, playerColor, isAiThinking, gameOver } = get();
 
         if (isAiThinking || gameOver) return;
-
-        // In AI vs AI mode, ignore selection
         if (gameMode === 'ai-vs-ai') return;
-
-        // In human vs AI mode, only allow selection for player's color
         if (gameMode === 'human-vs-ai' && currentTurn !== playerColor) return;
 
         const piece = chessGame.getPiece(position.row, position.col);
@@ -107,7 +152,6 @@ export const useGameStore = create<GameStore>((set, get) => {
           const validMoves = chessGame.getLegalMoves(position.row, position.col);
           set({ selectedSquare: position, validMoves });
         } else {
-          // Check if clicking on a valid move destination
           const move = get().validMoves.find(
             (m) => m.to.row === position.row && m.to.col === position.col
           );
@@ -127,21 +171,13 @@ export const useGameStore = create<GameStore>((set, get) => {
       const success = chessGame.makeMove(move);
 
       if (success) {
-        set({
-          board: chessGame.board.map((row) => [...row]),
-          currentTurn: chessGame.currentTurn,
-          castlingRights: JSON.parse(JSON.stringify(chessGame.castlingRights)),
-          enPassantTarget: chessGame.enPassantTarget,
-          halfMoveClock: chessGame.halfMoveClock,
-          fullMoveNumber: chessGame.fullMoveNumber,
-          moveHistory: [...chessGame.moveHistory],
-          capturedPieces: JSON.parse(JSON.stringify(chessGame.capturedPieces)),
-          gameOver: chessGame.gameOver,
-          gameResult: chessGame.gameResult,
-          selectedSquare: null,
-          validMoves: [],
-          lastMove: move,
-        });
+        syncState();
+        set({ selectedSquare: null, validMoves: [] });
+
+        // Schedule next AI move if it's now the AI's turn
+        if (!chessGame.gameOver && isAITurn()) {
+          scheduleNextAIMove(500);
+        }
       }
 
       return success;
@@ -151,31 +187,14 @@ export const useGameStore = create<GameStore>((set, get) => {
       const { chessGame, gameMode } = get();
 
       if (gameMode === 'human-vs-ai') {
-        // Undo both AI and human moves
         chessGame.undoMove();
         chessGame.undoMove();
       } else {
         chessGame.undoMove();
       }
 
-      set({
-        board: chessGame.board.map((row) => [...row]),
-        currentTurn: chessGame.currentTurn,
-        castlingRights: JSON.parse(JSON.stringify(chessGame.castlingRights)),
-        enPassantTarget: chessGame.enPassantTarget,
-        halfMoveClock: chessGame.halfMoveClock,
-        fullMoveNumber: chessGame.fullMoveNumber,
-        moveHistory: [...chessGame.moveHistory],
-        capturedPieces: JSON.parse(JSON.stringify(chessGame.capturedPieces)),
-        gameOver: chessGame.gameOver,
-        gameResult: chessGame.gameResult,
-        selectedSquare: null,
-        validMoves: [],
-        lastMove:
-          chessGame.moveHistory.length > 0
-            ? chessGame.moveHistory[chessGame.moveHistory.length - 1]?.move ?? null
-            : null,
-      });
+      syncState();
+      set({ selectedSquare: null, validMoves: [] });
     },
 
     flipBoard: () => {
@@ -184,12 +203,12 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     setGameMode: (mode: GameMode) => {
       set({ gameMode: mode });
-      get().resetGame();
+      get().initializeGame();
     },
 
     setPlayerColor: (color: PieceColor) => {
       set({ playerColor: color });
-      get().resetGame();
+      get().initializeGame();
     },
 
     setAIDifficulty: (difficulty: number) => {
@@ -208,6 +227,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       const { chessGame, ai, gameOver, isAiThinking } = get();
 
       if (gameOver || isAiThinking) return;
+      if (!isAITurn()) return;
 
       set({ isAiThinking: true });
 
@@ -226,7 +246,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       // Continue AI vs AI
       const state = get();
       if (!state.gameOver && state.gameMode === 'ai-vs-ai') {
-        setTimeout(() => get().makeAIMove(), 500);
+        scheduleNextAIMove(500);
       }
     },
   };
