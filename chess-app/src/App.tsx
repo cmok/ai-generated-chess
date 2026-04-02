@@ -4,10 +4,12 @@ import { ChessBoard } from './components/ChessBoard';
 import { GameControls } from './components/GameControls';
 import { GameInfoComponent } from './components/GameInfo';
 import { CapturedPieces } from './components/CapturedPieces';
+import { ThinkingSpinner } from './components/ThinkingSpinner';
 import { useGameStore } from './store/gameStore';
 
 const App: React.FC = () => {
   const initializeGame = useGameStore((state) => state.initializeGame);
+  const isAiThinking = useGameStore((state) => state.isAiThinking);
 
   useEffect(() => {
     initializeGame();
@@ -24,6 +26,7 @@ const App: React.FC = () => {
         <ChessBoard />
         <CapturedPieces />
       </Container>
+      <ThinkingSpinner visible={isAiThinking} />
     </>
   );
 };

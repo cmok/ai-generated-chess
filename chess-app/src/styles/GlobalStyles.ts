@@ -274,24 +274,36 @@ export const DifficultyHint = styled.small`
   font-size: 12px;
 `;
 
-export const ThinkingIndicator = styled.div`
-  display: inline-flex;
+export const SpinnerOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: #667eea;
-  color: white;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 10px;
+  z-index: 1000;
+  pointer-events: none;
 `;
 
-export const MiniSpinner = styled.div`
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
+export const SpinnerCard = styled.div`
+  background:  rgba(255, 255, 255, 0.8);
+  padding: 20px 30px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+`;
+
+export const Spinner = styled.div`
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e0e0e0;
+  border-top: 3px solid #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 
@@ -299,6 +311,12 @@ export const MiniSpinner = styled.div`
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+`;
+
+export const SpinnerText = styled.span`
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
 `;
 
 export const ResponsiveStyles = createGlobalStyle`

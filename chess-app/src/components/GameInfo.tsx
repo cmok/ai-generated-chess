@@ -1,12 +1,11 @@
 import React from 'react';
-import { GameInfo, Status, MoveHistory, ThinkingIndicator, MiniSpinner } from '../styles/GlobalStyles';
+import { GameInfo, Status, MoveHistory } from '../styles/GlobalStyles';
 import { useGameStore } from '../store/gameStore';
 
 export const GameInfoComponent: React.FC = () => {
   const currentTurn = useGameStore((state) => state.currentTurn);
   const gameOver = useGameStore((state) => state.gameOver);
   const gameResult = useGameStore((state) => state.gameResult);
-  const isAiThinking = useGameStore((state) => state.isAiThinking);
   const moveHistory = useGameStore((state) => state.moveHistory);
   const chessGame = useGameStore((state) => state.chessGame);
 
@@ -43,12 +42,6 @@ export const GameInfoComponent: React.FC = () => {
   return (
     <GameInfo>
       <Status gameOver={gameOver}>{getStatusText()}</Status>
-      {isAiThinking && (
-        <ThinkingIndicator>
-          <MiniSpinner />
-          AI is thinking...
-        </ThinkingIndicator>
-      )}
       <MoveHistory>{getMoveHistoryText()}</MoveHistory>
     </GameInfo>
   );
