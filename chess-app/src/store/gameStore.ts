@@ -235,13 +235,21 @@ export const useGameStore = create<GameStore>((set, get) => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const aiColor = chessGame.currentTurn;
-      const move = await ai?.getBestMove(aiColor);
+      
+      // Add timeout to prevent AI from freezing
+      const movePromise = ai?.getBestMove(aiColor);
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 10000) // 10 second timeout
+      );
+      
+      const move = await Promise.race([movePromise, timeoutPromise]);
+
+      // Always reset thinking state before making the move
+      set({ isAiThinking: false });
 
       if (move) {
         get().makeMove(move);
       }
-
-      set({ isAiThinking: false });
 
       // Continue AI vs AI
       const state = get();

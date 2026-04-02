@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameInfo, Status, MoveHistory } from '../styles/GlobalStyles';
+import { GameInfo, Status, MoveHistory, ThinkingIndicator, MiniSpinner } from '../styles/GlobalStyles';
 import { useGameStore } from '../store/gameStore';
 
 export const GameInfoComponent: React.FC = () => {
@@ -23,17 +23,7 @@ export const GameInfoComponent: React.FC = () => {
     }
 
     const turn = currentTurn.charAt(0).toUpperCase() + currentTurn.slice(1);
-    let statusText = `${turn}'s turn`;
-
-    if (chessGame.isInCheck(currentTurn)) {
-      statusText += ' - Check!';
-    }
-
-    if (isAiThinking) {
-      statusText += ' (AI thinking...)';
-    }
-
-    return statusText;
+    return `${turn}'s turn${chessGame.isInCheck(currentTurn) ? ' - Check!' : ''}`;
   };
 
   const getMoveHistoryText = (): string => {
@@ -53,6 +43,12 @@ export const GameInfoComponent: React.FC = () => {
   return (
     <GameInfo>
       <Status gameOver={gameOver}>{getStatusText()}</Status>
+      {isAiThinking && (
+        <ThinkingIndicator>
+          <MiniSpinner />
+          AI is thinking...
+        </ThinkingIndicator>
+      )}
       <MoveHistory>{getMoveHistoryText()}</MoveHistory>
     </GameInfo>
   );
